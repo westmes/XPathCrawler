@@ -1,6 +1,27 @@
-package edu.upenn.cis.stormlite;
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package edu.upenn.cis.stormlite.spout;
 
 import java.util.Map;
+
+import edu.upenn.cis.stormlite.IStreamSource;
+import edu.upenn.cis.stormlite.TopologyContext;
+import edu.upenn.cis.stormlite.routers.IStreamRouter;
 
 /**
  * ISpout is the core interface for implementing spouts. 
@@ -11,7 +32,7 @@ import java.util.Map;
  * @author zives
  *
  */
-public interface ISpout extends IStreamSource {
+public interface IRichSpout extends IStreamSource {
 	/**
 	 * Called when a task for this component is initialized within a 
 	 * worker on the cluster. It provides the spout with the environment 
@@ -27,7 +48,7 @@ public interface ISpout extends IStreamSource {
 	 *        and should be saved as an instance variable of this spout 
 	 *        object.
 	 */
-	public void open(Map<String,String> config, TopologyContext topo, OutputCollector collector);
+	public void open(Map<String,String> config, TopologyContext topo, SpoutOutputCollector collector);
 
 	/**
 	 * Called when an ISpout is going to be shutdown. 
@@ -42,5 +63,7 @@ public interface ISpout extends IStreamSource {
 	 * so if the Spout has no tuples to emit, this method should return. 
 	 */
 	public void nextTuple();
+
+	public void setRouter(IStreamRouter router);
 
 }

@@ -1,10 +1,26 @@
-package edu.upenn.cis.stormlite;
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package edu.upenn.cis.stormlite.bolt;
 
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
+
+import edu.upenn.cis.stormlite.IOutputCollector;
+import edu.upenn.cis.stormlite.routers.IStreamRouter;
 
 /**
  * Simplified version of Storm output queues
@@ -12,42 +28,23 @@ import java.util.Set;
  * @author zives
  *
  */
-public class OutputCollector {
-	static Set<IBolt> nullSet = new HashSet<>();
-	
-	Topology topology;
-	
-	Map<String,Set<IBolt>> bolts = new HashMap<>();
+public class OutputCollector implements IOutputCollector {
+	IStreamRouter router;
 	
 	public OutputCollector() {
 		
 	}
+
+	@Override
+	public void setRouter(IStreamRouter router) {
+		this.router = router;
+	}
 	
 	/**
-	 * @param streamId
+	 * Emits a tuple to the stream destination
 	 * @param tuple
 	 */
-	public void emit(String streamId, List<Object> tuple) {
-		for (IBolt bolt: getBolts(streamId)) {
-			bolt.execute(
-					new Tuple(topology.streamSchemas.get(streamId), 
-							tuple));
-		}
-	}
-	
-	public Set<IBolt> getBolts(String stream) {
-		Set<IBolt> ret = bolts.get(stream);
-		
-		if (ret == null)
-			return nullSet;
-		else
-			return ret;
-	}
-	
-	public void registerBolt(String stream, IBolt bolt) {
-		if (!bolts.containsKey(stream))
-			bolts.put(stream, new HashSet<IBolt>());
-		
-		bolts.get(stream).add(bolt);
+	public void emit(List<Object> tuple) {
+		router.execute(tuple);
 	}
 }

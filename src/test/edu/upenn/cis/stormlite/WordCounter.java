@@ -2,15 +2,24 @@ package test.edu.upenn.cis.stormlite;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
+
+import org.apache.log4j.Logger;
 
 import edu.upenn.cis.stormlite.OutputFieldsDeclarer;
 import edu.upenn.cis.stormlite.TopologyContext;
 import edu.upenn.cis.stormlite.bolt.IRichBolt;
 import edu.upenn.cis.stormlite.bolt.OutputCollector;
+import edu.upenn.cis.stormlite.routers.IStreamRouter;
 import edu.upenn.cis.stormlite.tuple.Fields;
 import edu.upenn.cis.stormlite.tuple.Tuple;
 import edu.upenn.cis.stormlite.tuple.Values;
 
+/**
+ * Simple word counter, largely derived from
+ * https://github.com/apache/storm/tree/master/examples/storm-mongodb-examples
+ * 
+ */
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -30,21 +39,33 @@ import edu.upenn.cis.stormlite.tuple.Values;
  */
 
 public class WordCounter implements IRichBolt {
-    private Map<String, Integer> wordCounter = new HashMap<>();
+	static Logger log = Logger.getLogger(WordCounter.class);
+	
+
+	private Map<String, Integer> wordCounter = new HashMap<>();
+    
+    /**
+     * To make it easier to debug: we have a unique ID for each
+     * instance of the WordCounter, aka each "executor"
+     */
+    String executorId = UUID.randomUUID().toString();
     
     private OutputCollector collector;
     
     public WordCounter() {
     }
     
+    @Override
     public void prepare(Map<String,String> stormConf, 
     		TopologyContext context, OutputCollector collector) {
         this.collector = collector;
     }
 
+    @Override
     public void execute(Tuple input) {
         String word = input.getStringByField("word");
         int count;
+        log.debug(getExecutorId() + " received " + word);
         if (wordCounter.containsKey(word)) {
             count = wordCounter.get(word) + 1;
             wordCounter.put(word, wordCounter.get(word) + 1);
@@ -56,12 +77,23 @@ public class WordCounter implements IRichBolt {
         collector.emit(new Values<Object>(word, String.valueOf(count)));
     }
 
+    @Override
     public void cleanup() {
 
     }
 
+    @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         declarer.declare(new Fields("word", "count"));
     }
 
+	@Override
+	public String getExecutorId() {
+		return executorId;
+	}
+
+	@Override
+	public void setRouter(IStreamRouter router) {
+		this.collector.setRouter(router);
+	}
 }
