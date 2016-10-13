@@ -63,7 +63,7 @@ public class Topology {
 	}
 
 	public void setSpouts(String name, Class<? extends IRichSpout> spoutClass, Integer parallel) {
-		this.spouts.put(name, Pair.of(spoutClass, Integer.valueOf(parallel)));
+		this.spouts.put(name, Pair.<Class<? extends IRichSpout>, Integer>of(spoutClass, Integer.valueOf(parallel)));
 	}
 
 	public Map<String, Pair<Class<? extends IRichBolt>, Integer>> getBolts() {
@@ -75,7 +75,7 @@ public class Topology {
 	}
 
 	public void setBolts(String bolt, Class<? extends IRichBolt> boltClass, Integer parallel) {
-		this.bolts.put(bolt, Pair.of(boltClass, Integer.valueOf(parallel)));
+		this.bolts.put(bolt, Pair.<Class<? extends IRichBolt>, Integer>of(boltClass, Integer.valueOf(parallel)));
 	}
 
 	public Map<Pair<String, Integer>, String> getBoltConnectors() {
