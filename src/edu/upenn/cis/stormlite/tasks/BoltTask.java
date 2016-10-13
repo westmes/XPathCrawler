@@ -17,24 +17,29 @@
  */
 package edu.upenn.cis.stormlite.tasks;
 
-import java.util.List;
+import edu.upenn.cis.stormlite.bolt.IRichBolt;
+import edu.upenn.cis.stormlite.tuple.Tuple;
 
-import edu.upenn.cis.stormlite.routers.IStreamRouter;
-
-public class RouteTask implements Runnable {
+/**
+ * This is a simple task that, when scheduled, processes
+ * a tuple through a bolt.
+ * 
+ * @author zives
+ *
+ */
+public class BoltTask implements Runnable {
 	
-	IStreamRouter router;
-	List<Object> data;
+	IRichBolt bolt;
+	Tuple tuple;
 	
-	public RouteTask(IStreamRouter router, List<Object> data) {
-		this.data = data;
-		this.router = router;
+	public BoltTask(IRichBolt bolt, Tuple tuple) {
+		this.bolt = bolt;
+		this.tuple = tuple;
 	}
 
 	@Override
 	public void run() {
-		router.execute(data);
-		
+		bolt.execute(tuple);
 	}
 
 }

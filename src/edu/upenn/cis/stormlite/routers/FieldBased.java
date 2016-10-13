@@ -17,9 +17,11 @@
  */
 package edu.upenn.cis.stormlite.routers;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import edu.upenn.cis.stormlite.bolt.IRichBolt;
+import edu.upenn.cis.stormlite.tuple.Fields;
 
 /**
  * Does hash partitioning on the tuple to determine
@@ -30,19 +32,57 @@ import edu.upenn.cis.stormlite.bolt.IRichBolt;
  */
 public class FieldBased extends IStreamRouter {
 	List<Integer> fieldsToHash;
+	List<String> shardFields;
 	
-	public FieldBased(List<Integer> fields) {
-		fieldsToHash = fields;
+	public FieldBased(List<String> shardFields) {
+		fieldsToHash = new ArrayList<Integer>();
+		this.shardFields = shardFields;
 	}
 	
+	/**
+	 * Adds an index field of an attribute that's used to shard the data
+	 * @param field
+	 */
+	public void addField(Integer field) {
+		fieldsToHash.add(field);
+	}
+	
+	/**
+	 * Determines which bolt to route tuples to
+	 */
 	public IRichBolt getBoltFor(List<Object> tuple) {
 		
 		int hash = 0;
 		
+		if (fieldsToHash.isEmpty())
+			throw new IllegalArgumentException("Field-based grouping without a shard attribute");
+		
 		for (Integer i: fieldsToHash)
 			hash ^= tuple.get(i).hashCode();
+		
+		hash = hash % getBolts().size();
+		if (hash < 0)
+			hash = hash + getBolts().size();
 
-		return getBolts().get(hash % getBolts().size());
+		return getBolts().get(hash);
 	}
 
+	/**
+	 * Handler that, given a schema, looks up the index positions used
+	 * for sharding fields
+	 */
+	@Override
+	public void declare(Fields fields) {
+		super.declare(fields);
+
+		if (shardFields != null) {
+			for (String name: shardFields) {
+				Integer pos = fields.indexOf(name);
+				if (pos < 0)
+					throw new IllegalArgumentException("Shard field " + name + " was not found in " + fields);
+				if (!fieldsToHash.contains(pos))
+					fieldsToHash.add(pos);
+			}
+		}
+	}
 }

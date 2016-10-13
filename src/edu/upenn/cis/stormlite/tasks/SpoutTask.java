@@ -21,6 +21,12 @@ import java.util.Queue;
 
 import edu.upenn.cis.stormlite.spout.IRichSpout;
 
+/**
+ * This is a simple task that retrieves a tuple from a spout
+ * 
+ * @author zives
+ *
+ */
 public class SpoutTask implements Runnable {
 	
 	IRichSpout spout;

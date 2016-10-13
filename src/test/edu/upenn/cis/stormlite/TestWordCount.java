@@ -50,9 +50,14 @@ public class TestWordCount {
         // wordSpout ==> countBolt ==> MongoInsertBolt
         TopologyBuilder builder = new TopologyBuilder();
 
+        // Only one source ("spout") for the words
         builder.setSpout(WORD_SPOUT, spout, 1);
-        builder.setBolt(COUNT_BOLT, bolt, 4).shuffleGrouping(WORD_SPOUT);
-        builder.setBolt(PRINT_BOLT, printer, 4).fieldsGrouping(COUNT_BOLT, new Fields("word"));
+        
+        // Four parallel word counters, each of which gets specific words
+        builder.setBolt(COUNT_BOLT, bolt, 4).fieldsGrouping(WORD_SPOUT, new Fields("word"));
+        
+        // A single printer bolt (and officially we round-robin)
+        builder.setBolt(PRINT_BOLT, printer, 4).shuffleGrouping(COUNT_BOLT);
 
         LocalCluster cluster = new LocalCluster();
         Topology topo = builder.createTopology();

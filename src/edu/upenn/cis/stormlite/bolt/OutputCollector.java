@@ -20,6 +20,7 @@ package edu.upenn.cis.stormlite.bolt;
 import java.util.List;
 
 import edu.upenn.cis.stormlite.IOutputCollector;
+import edu.upenn.cis.stormlite.TopologyContext;
 import edu.upenn.cis.stormlite.routers.IStreamRouter;
 
 /**
@@ -30,9 +31,10 @@ import edu.upenn.cis.stormlite.routers.IStreamRouter;
  */
 public class OutputCollector implements IOutputCollector {
 	IStreamRouter router;
+	TopologyContext context;
 	
-	public OutputCollector() {
-		
+	public OutputCollector(TopologyContext context) {
+		this.context = context;
 	}
 
 	@Override
@@ -45,6 +47,10 @@ public class OutputCollector implements IOutputCollector {
 	 * @param tuple
 	 */
 	public void emit(List<Object> tuple) {
-		router.execute(tuple);
+		router.execute(tuple, context);
+	}
+
+	public IStreamRouter getRouter() {
+		return router;
 	}
 }

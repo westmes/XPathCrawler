@@ -22,6 +22,7 @@ import java.util.Map;
 import edu.upenn.cis.stormlite.IStreamSource;
 import edu.upenn.cis.stormlite.TopologyContext;
 import edu.upenn.cis.stormlite.routers.IStreamRouter;
+import edu.upenn.cis.stormlite.tuple.Fields;
 import edu.upenn.cis.stormlite.tuple.Tuple;
 
 public interface IRichBolt extends IStreamSource {
@@ -48,5 +49,17 @@ public interface IRichBolt extends IStreamSource {
             TopologyContext context,
             OutputCollector collector);
 	
+	/**
+	 * Called during topology creation: sets the output router
+	 * 
+	 * @param router
+	 */
 	public void setRouter(IStreamRouter router);
+
+	/**
+	 * Get the list of fields in the stream tuple
+	 * 
+	 * @return
+	 */
+	public Fields getSchema();
 }

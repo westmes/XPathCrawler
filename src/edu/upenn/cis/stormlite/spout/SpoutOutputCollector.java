@@ -47,9 +47,7 @@ public class SpoutOutputCollector implements IOutputCollector  {
 	 * @param tuple
 	 */
 	public void emit(List<Object> tuple) {
-		router.execute(tuple);
-		
-//		context.addStreamTask(new RouteTask(router, tuple));
+		router.execute(tuple, context);
 	}
 
 }

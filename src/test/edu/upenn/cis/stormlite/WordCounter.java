@@ -41,7 +41,16 @@ import edu.upenn.cis.stormlite.tuple.Values;
 public class WordCounter implements IRichBolt {
 	static Logger log = Logger.getLogger(WordCounter.class);
 	
-
+	Fields schema = new Fields("word", "count");
+	
+	/**
+	 * This is a simple map from word to a running count.
+	 * If we have multiple "sharded" copies of the WordCounter
+	 * we'll need to make sure they get different words, otherwise
+	 * we'll have multiple partial counts instead of a single unified
+	 * one.
+	 * 
+	 */
 	private Map<String, Integer> wordCounter = new HashMap<>();
     
     /**
@@ -50,17 +59,27 @@ public class WordCounter implements IRichBolt {
      */
     String executorId = UUID.randomUUID().toString();
     
+    /**
+     * This is where we send our output stream
+     */
     private OutputCollector collector;
     
     public WordCounter() {
     }
     
+    /**
+     * Initialization, just saves the output stream destination
+     */
     @Override
     public void prepare(Map<String,String> stormConf, 
     		TopologyContext context, OutputCollector collector) {
         this.collector = collector;
     }
 
+    /**
+     * Process a tuple received from the stream, incrementing our
+     * counter and outputting a result
+     */
     @Override
     public void execute(Tuple input) {
         String word = input.getStringByField("word");
@@ -77,23 +96,46 @@ public class WordCounter implements IRichBolt {
         collector.emit(new Values<Object>(word, String.valueOf(count)));
     }
 
+    /**
+     * Shutdown, just frees memory
+     */
     @Override
     public void cleanup() {
+    	System.out.println("WordCount executor " + getExecutorId() + " has words: " + wordCounter.keySet());
 
+    	wordCounter.clear();
     }
 
+    /**
+     * Lets the downstream operators know our schema
+     */
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        declarer.declare(new Fields("word", "count"));
+        declarer.declare(schema);
     }
 
+    /**
+     * Used for debug purposes, shows our exeuctor/operator's unique ID
+     */
 	@Override
 	public String getExecutorId() {
 		return executorId;
 	}
 
+	/**
+	 * Called during topology setup, sets the router to the next
+	 * bolt
+	 */
 	@Override
 	public void setRouter(IStreamRouter router) {
 		this.collector.setRouter(router);
+	}
+
+	/**
+	 * The fields (schema) of our output stream
+	 */
+	@Override
+	public Fields getSchema() {
+		return schema;
 	}
 }

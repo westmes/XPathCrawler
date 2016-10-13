@@ -10,6 +10,7 @@ import edu.upenn.cis.stormlite.TopologyContext;
 import edu.upenn.cis.stormlite.bolt.IRichBolt;
 import edu.upenn.cis.stormlite.bolt.OutputCollector;
 import edu.upenn.cis.stormlite.routers.IStreamRouter;
+import edu.upenn.cis.stormlite.tuple.Fields;
 import edu.upenn.cis.stormlite.tuple.Tuple;
 
 /**
@@ -21,6 +22,8 @@ import edu.upenn.cis.stormlite.tuple.Tuple;
  */
 public class PrintBolt implements IRichBolt {
 	static Logger log = Logger.getLogger(PrintBolt.class);
+	
+	Fields myFields = new Fields();
 
     /**
      * To make it easier to debug: we have a unique ID for each
@@ -56,7 +59,12 @@ public class PrintBolt implements IRichBolt {
 
 	@Override
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-		// There aren't any output streams
-		
+		declarer.declare(myFields);
 	}
+
+	@Override
+	public Fields getSchema() {
+		return myFields;
+	}
+
 }

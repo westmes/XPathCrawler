@@ -44,10 +44,14 @@ import edu.upenn.cis.stormlite.tasks.SpoutTask;
  * Use multiple threads to simulate a cluster of worker nodes.
  * Emulates a distributed environment.
  * 
+ * A thread pool (the executor) executes runnable tasks.  Each
+ * task involves calling a nextTuple() or execute() method in
+ * a spout or bolt, then routing its tuple to the router. 
+ * 
  * @author zives
  *
  */
-public class LocalCluster {
+public class LocalCluster implements Runnable {
 	static Logger log = Logger.getLogger(LocalCluster.class);
 	
 	static AtomicBoolean quit = new AtomicBoolean(false);
@@ -80,10 +84,11 @@ public class LocalCluster {
 		
 		createRoutes(topo, config);
 		
-		run();
+		// Put the run method in a background thread
+		new Thread(this).start();;
 	}
 	
-	private void run() {
+	public void run() {
 		while (!quit.get()) {
 			Runnable task = taskQueue.poll();
 			if (task == null)
@@ -141,7 +146,7 @@ public class LocalCluster {
 		for (String key: topo.getBolts().keySet()) {
 			Pair<Class<? extends IRichBolt>, Integer> bolt = topo.getBolt(key);
 			
-			OutputCollector collector = new OutputCollector();
+			OutputCollector collector = new OutputCollector(context);
 			
 			boltStreams.put(key, new ArrayList<IRichBolt>());
 			for (int i = 0; i < bolt.getRight(); i++)
@@ -160,6 +165,13 @@ public class LocalCluster {
 		}
 	}
 
+	/**
+	 * Link the output streams to input streams, ensuring that the right kinds
+	 * of grouping + routing are accomplished
+	 * 
+	 * @param topo
+	 * @param config
+	 */
 	private void createRoutes(Topology topo, Config config) {
 		// Add destination streams to the appropriate bolts
 		for (String stream: topo.getBolts().keySet()) {

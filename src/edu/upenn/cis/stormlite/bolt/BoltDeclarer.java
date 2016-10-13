@@ -19,19 +19,41 @@ package edu.upenn.cis.stormlite.bolt;
 
 import java.io.Serializable;
 
+import edu.upenn.cis.stormlite.routers.FieldBased;
 import edu.upenn.cis.stormlite.routers.IStreamRouter;
 import edu.upenn.cis.stormlite.routers.RoundRobin;
 import edu.upenn.cis.stormlite.tuple.Fields;
 
+/**
+ * This determines how we route messages to the next
+ * operator, e.g., round-robin, hash-based, ... 
+ * 
+ * @author zives
+ *
+ */
 public class BoltDeclarer implements Serializable {
 	
 	public static final String SHUFFLE = "shuffle";
 	public static final String FIELDS = "fields";
 	
+	/**
+	 * The stream ID
+	 */
 	String stream;
+	
+	/**
+	 * The kind of stream (how it routes among multiple executors)
+	 */
 	String type;
+	
+	/**
+	 * Fields used for sharding
+	 */
 	Fields shardFields;
 	
+	/**
+	 * Where the stream messages are handled
+	 */
 	IStreamRouter router;
 	
 	/**
@@ -46,18 +68,37 @@ public class BoltDeclarer implements Serializable {
 		setType(typ);
 	}
 	
+	/**
+	 * Get the type of the stream
+	 * 
+	 * @return
+	 */
 	public String getType() { 
 		return type; 
 	}
 	
+	/**
+	 * Set the type of stream
+	 * @param typ
+	 */
 	public void setType(String typ) {
 		this.type = typ;
 	} 
 	
+	/**
+	 * The name of the stream
+	 * @return
+	 */
 	public String getStream() {
 		return stream;
 	}
 	
+	/**
+	 * If we have field-based grouping, we need to know
+	 * the fields used to shard the data
+	 * 
+	 * @return
+	 */
 	public Fields getShardingFields() {
 		return shardFields;
 	}
@@ -83,12 +124,25 @@ public class BoltDeclarer implements Serializable {
 		shardFields = fields;
 		setType(FIELDS);
 	}
-	
+
+	/**
+	 * Creates (or returns) a "router" that funnels our
+	 * output stream to the next destination (which might
+	 * have multiple executors).
+	 *  
+	 * @return
+	 */
 	public IStreamRouter getRouter() {
-//		if (getType().equals(SHUFFLE)) {
 		if (router == null)
-			router = new RoundRobin();
-//		}
+				// Round-robin is straightforward
+			if (getType().equals(SHUFFLE)) {
+				router = new RoundRobin();
+				
+				// If we are sharding by fields, look up
+				// the indices within the schema of the stream
+			} else if (getType().equals(FIELDS)) {
+				router = new FieldBased(shardFields);
+			}
 		
 		return router;
 	}
