@@ -39,7 +39,7 @@
         </javac>
     </target>
     
-    <target name="compile-crawler" depends="compile-xpathengine,compile-storage" description="Compiles the crawler">
+    <target name="compile-crawler" depends="compile-storage" description="Compiles the crawler">
         <mkdir dir="${classes.dir}"/>
         <javac srcdir="src/edu/upenn/cis455/crawler" destdir="${classes.dir}" debug="on" deprecation="off" optimize="on" includeAntRuntime="no">
             <classpath>
