@@ -27,13 +27,13 @@ public class XPathEngineImpl implements XPathEngine {
 
 @Override
 public boolean isSAX() {
-	// TODO Auto-generated method stub
-	return false;
+	// This returns true by implementing SAX/Event-driven
+	return true;
 }
 
 @Override
 public boolean[] evaluateSAX(InputStream document, DefaultHandler handler) {
-	// TODO Auto-generated method stub
+	
 	return null;
 }
         
