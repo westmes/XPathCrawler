@@ -43,6 +43,7 @@ public class XPathParse {
 			}
 			
 			PathNode pn = constructNewPathNode();
+			prev.addNextPathNode(pn);
 			
 			// TODO: add nodeName to qi
 			
@@ -50,6 +51,7 @@ public class XPathParse {
 				xpathParse = xpathParse.substring(i);
 			}
 			
+			// keep parsing test for the PathNode
 			while (xpathParse.startsWith("[")) {
 				test(pn);
 			}
@@ -92,7 +94,7 @@ public class XPathParse {
 			
 			// remove ']'
 			if (xpathParse.trim().startsWith("]")) {
-				xpathParse = xpathParse.substring(1);
+				xpathParse = xpathParse.substring(1).trim();
 			} else {
 				// throw
 				// return false;
