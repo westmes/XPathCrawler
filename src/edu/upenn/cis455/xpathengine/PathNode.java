@@ -8,6 +8,7 @@ public class PathNode {
 	int relativePos;
 	int level;
 	ArrayList<ExpressionTree> filters;
+	// can contain multiple if nested path in filter
 	ArrayList<PathNode> nextPathNodeSet; 
 	
 	public PathNode() {
@@ -17,5 +18,9 @@ public class PathNode {
 	
 	public void addNextPathNode(PathNode pn) {
 		nextPathNodeSet.add(pn);
+	}
+	
+	public void addfilter(ExpressionTree et) {
+		filters.add(et);
 	}
 }

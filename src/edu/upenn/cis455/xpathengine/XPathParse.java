@@ -1,18 +1,21 @@
 package edu.upenn.cis455.xpathengine;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 public class XPathParse {
 	String xpath;
 	String xpathParse;
 	QueryIndex qi;
 	String queryId;
 	private int pos;
+	// TODO: link previous node to current
+	PathNode prev;
 
 	public static void main(String[] args) {
 		String xpath = "/foo[bar][@att=\"xyz\"]/bar/abc[text/path[contains[text(),\"chicken\"]]/def";
 		XPathParse rdp = new XPathParse(xpath, "Q1");
 		rdp.recursiveParse();
-
-		
 	}
 	
 	public XPathParse(String xpath, String qid) {
@@ -42,7 +45,6 @@ public class XPathParse {
 			PathNode pn = constructNewPathNode();
 			
 			// TODO: add nodeName to qi
-			
 			
 			if (i<xpathParse.length()) {
 				xpathParse = xpathParse.substring(i);
@@ -92,26 +94,92 @@ public class XPathParse {
 			if (xpathParse.trim().startsWith("]")) {
 				xpathParse = xpathParse.substring(1);
 			} else {
+				// throw
 				// return false;
 			}
 			
 		}
-		
+		 
 		
 	}
 
 	private void textCheck(PathNode pn) {
-		// TODO Auto-generated method stub
-		ExpressionTree et = new ExpressionTree();
+		Pattern pattern = Pattern.compile("(text\\(\\)\\s*=\\s*\".*?\")\\s*].*");
+		Matcher match = pattern.matcher(xpathParse);
+		if (match.matches()) {
+			String text = match.group(1);
+			ExpressionTree et = new ExpressionTree();
+			et.type = "text";
+			et.name = "text()";
+			int ind = text.indexOf("=");
+			// Note the value has quotation marks around it
+			et.value = text.substring(ind+1).trim();
+			
+			// remove up to ']'
+			xpathParse = xpathParse.replaceFirst(Pattern.quote(text),"").trim();
+			
+			// add expression tree to current PathNode
+			pn.addfilter(et);
+		} else {
+			// start with text(), but not well formatted
+			// TODO: throw
+		}
 	}
-
+	
+	/**
+	 * This method is used to build a filter expression tree for 'contains(text(), "...")'
+	 * @param pn
+	 */
 	private void containsText(PathNode pn) {
-		// TODO Auto-generated method stub
-		
+		Pattern pattern = Pattern.compile("(contains\\(\\s*text\\(\\)\\s*,\\s*\".*?\"\\))\\s*].*");
+		Matcher match = pattern.matcher(xpathParse);
+		if (match.matches()) {
+			String text = match.group(1);
+			ExpressionTree et = new ExpressionTree();
+			et.type = "contains";
+			et.name = "text()";
+			int ind = text.indexOf(',');
+			int ind2 = text.lastIndexOf(')');
+			
+			// Note the value has quotation marks around it
+			et.value = text.substring(ind+1, ind2).trim();
+			
+			// remove up to ']'
+			xpathParse = xpathParse.replaceFirst(Pattern.quote(text),"").trim();
+			
+			// add expression tree to current PathNode
+			pn.addfilter(et);
+		} else {
+			// start with contains, but not well formatted
+			// TODO: throw
+		}
 	}
-
+	
+	/**
+	 * This method is used to build a filter expression tree for '@attname="..."'
+	 * @param pn
+	 */
 	private void attribute(PathNode pn) {
-		// TODO Auto-generated method stub
+		Pattern pattern = Pattern.compile("(@[a-zA-Z_:][a-zA-Z0-9-_\\.:]*\\s*=\\s*\".*?\")\\s*].*");
+		Matcher match = pattern.matcher(xpathParse);
+		if (match.matches()) {
+			String text = match.group(1);
+			ExpressionTree et = new ExpressionTree();
+			et.type = "attribute";
+			int ind = text.indexOf('=');
+			et.name = text.substring(0,ind).trim();
+			// Note the value has quotation marks around it
+			et.value = text.substring(ind+1).trim();
+			
+			// remove up to ']'
+			xpathParse = xpathParse.replaceFirst(Pattern.quote(text),"").trim();
+			
+			// add expression tree to current PathNode
+			pn.addfilter(et);
+		} else {
+			// start with contains, but not well formatted
+			// TODO: throw
+		}
 		
 	}
 }
