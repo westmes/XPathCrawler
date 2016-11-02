@@ -1,8 +1,13 @@
 package edu.upenn.cis455.xpathengine;
 
-public class ExpressionTree {
+public class ExpressionTree<T> {
+	boolean evaluation;
 	String type;
 	String name;
-	String value;
+	T value;
+	
+	public ExpressionTree() {
+		this.evaluation = false;
+	}
 }
  

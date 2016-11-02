@@ -9,20 +9,20 @@ public class XPathParse {
 	QueryIndex qi;
 	String queryId;
 	private int pos;
-	// TODO: link previous node to current
 	PathNode prev;
 
 	public static void main(String[] args) {
 		String xpath = "/foo[bar][@att=\"xyz\"]/bar/abc[text/path[contains[text(),\"chicken\"]]/def";
-		XPathParse rdp = new XPathParse(xpath, "Q1");
+		XPathParse rdp = new XPathParse(new QueryIndex(), xpath, "Q1", null);
 		rdp.recursiveParse();
 	}
 	
-	public XPathParse(String xpath, String qid) {
-		this.qi = new QueryIndex();
+	public XPathParse(QueryIndex qi, String xpath, String qid, PathNode prev) {
+		this.qi = qi;
 		this.xpath = xpath;
 		this.xpathParse = xpath.trim();
 		this.queryId = qid;
+		this.prev = prev;
 		this.pos = 1;
 	}
 	
@@ -32,31 +32,41 @@ public class XPathParse {
 		}
 	}
 	
-	private boolean axisStep() {
-		if (xpathParse.startsWith("/")) {
-			StringBuilder nodeName = new StringBuilder();
-			int i=1;
-			while (i<xpathParse.length() && xpathParse.charAt(i)!='/' && xpathParse.charAt(i)!='[') {
-				
-				nodeName.append(xpathParse.charAt(i));
-				i++;
-			}
-			
-			PathNode pn = constructNewPathNode();
-			prev.addNextPathNode(pn);
-			
-			// TODO: add nodeName to qi
-			
-			if (i<xpathParse.length()) {
-				xpathParse = xpathParse.substring(i);
-			}
-			
-			// keep parsing test for the PathNode
-			while (xpathParse.startsWith("[")) {
-				test(pn);
-			}
+	private void axisStep() {
+		StringBuilder nodeName = new StringBuilder();
+		int i=1;
+		while (i<xpathParse.length() && xpathParse.charAt(i)!='/' && xpathParse.charAt(i)!='[') {
+			nodeName.append(xpathParse.charAt(i));
+			i++;
 		}
-		return true;
+
+		PathNode pn = constructNewPathNode();
+		if (prev != null && !prev.queryId.equals(this.queryId)) {
+			// case when this is a test from previous node
+			ExpressionTree<PathNode> et = new ExpressionTree<PathNode>();
+			et.type = "NodePath";
+			et.name = "node";
+			et.value = pn;
+			prev.addfilter(et);
+			prev.addNextPathNode(pn);
+		} else if (prev != null && prev.queryId.equals(this.queryId)) {
+			// case when this is a current node
+			prev.addNextPathNode(pn);
+		} else if (prev == null) {
+			// first node
+		}
+
+		// TODO: add nodeName to qi
+
+		if (i<xpathParse.length()) {
+			xpathParse = xpathParse.substring(i);
+		}
+
+		// keep parsing test for the PathNode
+		while (xpathParse.startsWith("[")) {
+			test(pn);
+		}
+		prev = pn;
 	}
 
 	private PathNode constructNewPathNode() {
@@ -89,7 +99,10 @@ public class XPathParse {
 			} else  {
 				// another path
 				xpathParse = "/" + xpathParse;
-				axisStep();
+				// TODO: wrong
+				int ind = xpathParse.indexOf(']');
+				(new XPathParse(qi , xpath.substring(0,ind), queryId, pn)).recursiveParse();
+				xpathParse = xpathParse.substring(ind);
 			}
 			
 			// remove ']'
@@ -110,7 +123,7 @@ public class XPathParse {
 		Matcher match = pattern.matcher(xpathParse);
 		if (match.matches()) {
 			String text = match.group(1);
-			ExpressionTree et = new ExpressionTree();
+			ExpressionTree<String> et = new ExpressionTree<String>();
 			et.type = "text";
 			et.name = "text()";
 			int ind = text.indexOf("=");
@@ -137,7 +150,7 @@ public class XPathParse {
 		Matcher match = pattern.matcher(xpathParse);
 		if (match.matches()) {
 			String text = match.group(1);
-			ExpressionTree et = new ExpressionTree();
+			ExpressionTree<String> et = new ExpressionTree<String>();
 			et.type = "contains";
 			et.name = "text()";
 			int ind = text.indexOf(',');
@@ -166,7 +179,7 @@ public class XPathParse {
 		Matcher match = pattern.matcher(xpathParse);
 		if (match.matches()) {
 			String text = match.group(1);
-			ExpressionTree et = new ExpressionTree();
+			ExpressionTree<String> et = new ExpressionTree<String>();
 			et.type = "attribute";
 			int ind = text.indexOf('=');
 			et.name = text.substring(0,ind).trim();
