@@ -7,103 +7,98 @@ public class XPathParse {
 	String xpath;
 	String xpathParse;
 	QueryIndex qi;
-	String queryId;
-	private int pos;
+	XPath path;
 	PathNode prev;
 
 	public static void main(String[] args) {
-		String xpath = "/foo[bar][@att=\"xyz\"]/bar/abc[text/path[contains[text(),\"chicken\"]]/def";
-		XPathParse rdp = new XPathParse(new QueryIndex(), xpath, "Q1", null);
-		rdp.recursiveParse();
+		String xpath = "/foo[bar[sql[text() =  \"   people\"]]][@att=\"xyz\"]/bar/abc[text/path[contains(text(),\"chicken\")]]/def";
+		XPath path = new XPath("Q1");
+		XPathParse rdp = new XPathParse(new QueryIndex(), xpath, path);
+		try {
+			rdp.recursiveParse(null, null);
+		} catch (Exception e) {
+			System.out.println("Malformatted XPath");
+			e.printStackTrace();
+		}
+		path.printXPath();
+		
 	}
 	
-	public XPathParse(QueryIndex qi, String xpath, String qid, PathNode prev) {
+	public XPathParse(QueryIndex qi, String xpath, XPath path) {
 		this.qi = qi;
 		this.xpath = xpath;
 		this.xpathParse = xpath.trim();
-		this.queryId = qid;
-		this.prev = prev;
-		this.pos = 1;
+		this.path = path;
 	}
 	
-	public void recursiveParse(){
-		while (xpathParse.startsWith("/")) {
-			axisStep();
+	public void recursiveParse(PathNode prev, PathNode curr){
+		if (xpathParse.startsWith("/")) {
+			axisStep(prev, curr);
+		} else if (xpathParse.isEmpty()) {
+			return;
 		}
 	}
 	
-	private void axisStep() {
+	private void axisStep(PathNode prev, PathNode curr) {
+		// get node name
 		StringBuilder nodeName = new StringBuilder();
 		int i=1;
-		while (i<xpathParse.length() && xpathParse.charAt(i)!='/' && xpathParse.charAt(i)!='[') {
+		while (i<xpathParse.length() && xpathParse.charAt(i)!='/' && xpathParse.charAt(i)!='[' && xpathParse.charAt(i)!=']') {
 			nodeName.append(xpathParse.charAt(i));
 			i++;
 		}
 
-		PathNode pn = constructNewPathNode();
-		if (prev != null && !prev.queryId.equals(this.queryId)) {
-			// case when this is a test from previous node
-			ExpressionTree<PathNode> et = new ExpressionTree<PathNode>();
-			et.type = "NodePath";
-			et.name = "node";
-			et.value = pn;
-			prev.addfilter(et);
-			prev.addNextPathNode(pn);
-		} else if (prev != null && prev.queryId.equals(this.queryId)) {
-			// case when this is a current node
-			prev.addNextPathNode(pn);
-		} else if (prev == null) {
-			// first node
+		curr = constructNewPathNode(prev, nodeName.toString());
+		if (prev != null) {
+			prev.addNextPathNode(curr);
+		} else {
+			// if first element
+			// update XPath head
+			path.head = curr;
 		}
 
 		// TODO: add nodeName to qi
 
-		if (i<xpathParse.length()) {
+		if (i<=xpathParse.length()) {
 			xpathParse = xpathParse.substring(i);
 		}
 
 		// keep parsing test for the PathNode
 		while (xpathParse.startsWith("[")) {
-			test(pn);
+			test(prev, curr);
 		}
-		prev = pn;
+		
+		recursiveParse(curr, curr);
 	}
 
-	private PathNode constructNewPathNode() {
-		PathNode pn = new PathNode();
-		pn.queryId = this.queryId;
-		pn.position = this.pos;
-		if (pos == 1) {
-			pn.relativePos = 0;
-			pn.level = 1;
+	private PathNode constructNewPathNode(PathNode prev, String nodeName) {
+		PathNode pn = null;
+		if (prev == null) {
+			pn = new PathNode(nodeName, this.path.qid, 1, 0, 1);
 		} else {
-			// double check this
-			pn.relativePos = 1;
-			pn.level = 0;
+			pn = new PathNode(nodeName, this.path.qid, prev.position+1, 1, 0);
 		}
-		pos++;
 		return pn;
 	}
 
-	private void test(PathNode pn) {
+	private void test(PathNode prev, PathNode curr) {
 		if (xpathParse.startsWith("[")) {
 			
 			xpathParse = xpathParse.substring(1).trim();
-			
 			if (xpathParse.startsWith("@")) {
-				attribute(pn);
+				attribute(curr);
 			} else if (xpathParse.startsWith("contains")){
-				containsText(pn);
+				containsText(curr);
 			} else if (xpathParse.startsWith("text()")) {
-				textCheck(pn);
-			} else  {
-				// another path
+				textCheck(curr);
+			} else {
+				// another path, add '/' so we can form axis+step
 				xpathParse = "/" + xpathParse;
-				// TODO: wrong
-				int ind = xpathParse.indexOf(']');
-				(new XPathParse(qi , xpath.substring(0,ind), queryId, pn)).recursiveParse();
-				xpathParse = xpathParse.substring(ind);
+				// next so we move the current to prev
+				recursiveParse(curr, curr);
 			}
+			
+			// TODO: need a way to check for mal-formatted token
 			
 			// remove ']'
 			if (xpathParse.trim().startsWith("]")) {
@@ -112,10 +107,7 @@ public class XPathParse {
 				// throw
 				// return false;
 			}
-			
 		}
-		 
-		
 	}
 
 	private void textCheck(PathNode pn) {
@@ -161,7 +153,6 @@ public class XPathParse {
 			
 			// remove up to ']'
 			xpathParse = xpathParse.replaceFirst(Pattern.quote(text),"").trim();
-			
 			// add expression tree to current PathNode
 			pn.addfilter(et);
 		} else {
