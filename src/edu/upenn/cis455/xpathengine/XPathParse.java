@@ -8,12 +8,12 @@ public class XPathParse {
 	String xpathParse;
 	QueryIndex qi;
 	XPath path;
-	PathNode prev;
 
 	public static void main(String[] args) {
 		String xpath = "/foo[bar[sql[text() =  \"   people\"]]][@att=\"xyz\"]/bar/abc[text/path[contains(text(),\"chicken\")]]/def";
 		XPath path = new XPath("Q1");
-		XPathParse rdp = new XPathParse(new QueryIndex(), xpath, path);
+		QueryIndex qi = new QueryIndex();
+		XPathParse rdp = new XPathParse(qi, xpath, path);
 		try {
 			rdp.recursiveParse(null, null);
 		} catch (Exception e) {
@@ -49,16 +49,27 @@ public class XPathParse {
 		}
 
 		curr = constructNewPathNode(prev, nodeName.toString());
+		// TODO: maybe extract this into method
+		// TODO: THIS HAS A PROBLEM: if the XPath is wrong then the nodes already in QueryIndex must be removed
+		// Several solutions:
+		// 1. Add all nodes when parsing is finished
+		// 2. remove all the nodes already added since we have the path
+		// 3. do primary check before parsing
 		if (prev != null) {
+			// if not first element
+			// 1. update next list
 			prev.addNextPathNode(curr);
+			// 2. update wait list in QueryIndex
+			qi.addToWait(curr.nodeName, curr);
 		} else {
-			// if first element
-			// update XPath head
+			// if first element 
+			// 1. update XPath head
 			path.head = curr;
+			// 2. update candidate list in QueryIndex
+			qi.addToCandidate(curr.nodeName, curr);
 		}
-
-		// TODO: add nodeName to qi
-
+		
+		// update xpathParse (by removing /{nodeName})
 		if (i<=xpathParse.length()) {
 			xpathParse = xpathParse.substring(i);
 		}

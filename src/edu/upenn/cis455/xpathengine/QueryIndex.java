@@ -2,6 +2,7 @@ package edu.upenn.cis455.xpathengine;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 public class QueryIndex {
 	HashMap<String, ArrayList<PathNode>> candidate;
@@ -14,6 +15,29 @@ public class QueryIndex {
 	
 	public void initializeIndex(String name, PathNode pn, int pos) {
 		
+	}
+
+	public void addToWait(String nodeName, PathNode pn) {
+		ArrayList<PathNode> list = wait.get(nodeName);
+		if (list == null) {
+			list = new ArrayList<PathNode>();
+		}
+		list.add(pn);
+		wait.put(nodeName, list);
+	}
+
+	public void addToCandidate(String nodeName, PathNode pn) {
+		ArrayList<PathNode> list = candidate.get(nodeName);
+		if (list == null) {
+			list = new ArrayList<PathNode>();
+		}
+		list.add(pn);
+		candidate.put(nodeName, list);
+	}
+	
+	public void printQueryIndex() {
+		System.out.println(candidate);
+		System.out.println(wait);
 	}
 	
 }

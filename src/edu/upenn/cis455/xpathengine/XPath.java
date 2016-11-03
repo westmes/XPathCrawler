@@ -11,6 +11,9 @@ public class XPath {
 		this.qid = qid;
 	}
 	
+	/**
+	 * This is a BFS method for testing recursive parser
+	 */
 	public void printXPath() {
 		Queue<PathNode> queue = new LinkedList<PathNode>();
 		if (head != null) {
