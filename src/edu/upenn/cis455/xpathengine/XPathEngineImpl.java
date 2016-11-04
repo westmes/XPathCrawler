@@ -29,8 +29,8 @@ public class XPathEngineImpl implements XPathEngine {
 	public void setXPaths(String[] s) {
 		this.xpaths = s;
 		this.paths.clear();
-		this.qi = new QueryIndex();
-		this.rdp = new XPathParse(qi);
+//		this.qi = new QueryIndex();
+		this.rdp = new XPathParse();
 		isValid = new boolean[s.length];
 		Arrays.fill(isValid, false);
 		
@@ -76,7 +76,7 @@ public class XPathEngineImpl implements XPathEngine {
 			SAXParser saxParser = spf.newSAXParser();
 			Handler h = (Handler) handler;
 			
-	    	h.setHandler(qi, isMatched);
+	    	h.setHandler(paths, isMatched);
 			saxParser.parse(document, h);
 			
 		} catch (ParserConfigurationException e) {

@@ -2,6 +2,7 @@ package edu.upenn.cis455.xpathengine;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Stack;
 
@@ -16,15 +17,34 @@ public class Handler extends DefaultHandler {
 	HashSet<String> completed;
 	Stack<ArrayList<PathNode>> nodeText;
 	ArrayList<PathNode> nodeList;
-	private QueryIndex qiCopy;
 	
 	public Handler() {
 		super();
 	}
 	
-	public void setHandler(QueryIndex qi, boolean[] isMatched) {
-		this.qi = qi;
-		this.qiCopy = qi;
+	private void initQueryIndex(HashMap<String, XPath> xpath) {
+		for (XPath xp : xpath.values()) {
+			PathNode node = xp.head;
+			node.resetCompletion();
+			qi.addToCandidate(node.nodeName, node);
+			recursiveAdd(node);
+		}
+	}
+	
+	private void recursiveAdd(PathNode node) {
+		if (node.nextPathNodeSet.size() != 0) {
+			for (PathNode pn : node.nextPathNodeSet) {
+				pn.resetCompletion();
+				qi.addToWait(pn.nodeName, pn);
+				recursiveAdd(pn);
+			}
+		}
+		
+	}
+	
+	public void setHandler(HashMap<String, XPath> xpath, boolean[] isMatched) {
+		this.qi = new QueryIndex();
+		initQueryIndex(xpath);
 		this.isMatched = isMatched;
 		this.completed = new HashSet<String>();
 		this.nodeText = new Stack<ArrayList<PathNode>>();
@@ -39,10 +59,7 @@ public class Handler extends DefaultHandler {
 	@Override
 	public void endDocument() throws SAXException {
 		// only check the paths not completed
-		this.qi = qiCopy;
-//		Arrays.fill(isMatched, false);
 		completed.clear();
-		
 	}
 	
 	@Override
@@ -59,15 +76,6 @@ public class Handler extends DefaultHandler {
 //		System.out.println("end: " + localName);
 	}
 	
-//	private void textCheck(PathNode node) {
-//		for (ExpressionTree et : node.filters) {
-//			if (et.type.equals("text") || et.type.equals("contains")) {
-//				
-//			}
-//		}
-//		
-//	}
-	
 	private void removeFromCandidate(String localName, ArrayList<PathNode> nodeList) {
 		ArrayList<PathNode> list = qi.candidate.get(localName);
 		list.removeAll(nodeList);
@@ -79,9 +87,10 @@ public class Handler extends DefaultHandler {
 //		System.out.println("start: " + qName);
 		level++;
 		if (qi.candidate.containsKey(localName)) {
-			// if the element is in candidate 
+			// if the element is in candidate
+			nodeList = null;
 			nodeList = qi.candidate.get(localName);
-			nodeText.push(nodeList);
+			nodeText.push(new ArrayList<PathNode>(nodeList));
 			for (PathNode node : nodeList) {
 				if (!completed.contains(node.queryId)) {
 					boolean isLevel = levelCheck(node);
@@ -95,21 +104,6 @@ public class Handler extends DefaultHandler {
 					// 2. filter check (just the attributes aka. @att=value)
 					filterCheck(node, attributes);
 					updateQueryIndex(node);
-//					if (node.checkExpressionTree()) {
-//						// all filter passed (all @att)
-//						// complete this node
-//						node.updateComplete();
-//						if (node.nextPathNodeSet.size() == 0) {
-//							// no next element, ending
-//							// need to trace back to root
-//							if (node.checkValid()) {
-//								isMatched[Integer.parseInt(node.queryId.substring(1))] = true;
-//								completed.add(node.queryId);
-//							}
-//						} else {
-//							copyToCandidateList(node);
-//						}
-//					}
 					
 				} else {
 					continue;
@@ -133,8 +127,9 @@ public class Handler extends DefaultHandler {
 		if (node.checkExpressionTree()) {
 			// all filter passed (all @att)
 			// complete this node
-			node.updateComplete();
+			
 			if (node.nextPathNodeSet.size() == 0) {
+				node.updateComplete();
 				// no next element, ending
 				// need to trace back to root
 				if (node.checkValid()) {
@@ -166,6 +161,7 @@ public class Handler extends DefaultHandler {
 			if (et.type.equals("attribute")) {
 				String value = attributes.getValue(et.name.substring(1)); // get rid of the '@'
 				if (value != null) {
+					System.out.println(value);
 					String val =  et.value;
 					val = val.substring(1, val.length()-1); // get rid of double quotes
 					if (value.equals(val)) {
@@ -184,7 +180,7 @@ public class Handler extends DefaultHandler {
 		String str = new String(ch, start, length);
 		ArrayList<PathNode> nodes = nodeText.peek();
 		for (PathNode node : nodes) {
-			if (!completed.contains(node)) {
+			if (!completed.contains(node.queryId)) {
 				for (ExpressionTree et : node.filters) {
 					if (et.type.equals("text") || et.type.equals("contains")) {
 						String val = et.value;

@@ -25,8 +25,8 @@ public class XPathParse {
 		
 	}
 	
-	public XPathParse(QueryIndex qi) {
-		this.qi = qi;
+	public XPathParse() {
+//		this.qi = qi;
 	}
 	
 	public void setPath(String xpath, XPath path) {
@@ -64,13 +64,13 @@ public class XPathParse {
 			// 1. update next list
 			prev.addNextPathNode(curr);
 			// 2. update wait list in QueryIndex
-			qi.addToWait(curr.nodeName, curr);
+//			qi.addToWait(curr.nodeName, curr);
 		} else {
 			// if first element 
 			// 1. update XPath head
 			path.head = curr;
 			// 2. update candidate list in QueryIndex
-			qi.addToCandidate(curr.nodeName, curr);
+//			qi.addToCandidate(curr.nodeName, curr);
 		}
 		
 		// update xpathParse (by removing /{nodeName})

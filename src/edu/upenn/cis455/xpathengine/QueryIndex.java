@@ -12,10 +12,6 @@ public class QueryIndex {
 		candidate = new HashMap<String, ArrayList<PathNode>>();
 		wait = new HashMap<String, ArrayList<PathNode>>();
 	}
-	
-	public void initializeIndex(String name, PathNode pn, int pos) {
-		
-	}
 
 	public void addToWait(String nodeName, PathNode pn) {
 		ArrayList<PathNode> list = wait.get(nodeName);
@@ -31,13 +27,10 @@ public class QueryIndex {
 		if (list == null) {
 			list = new ArrayList<PathNode>();
 		}
-		list.add(pn);
-		candidate.put(nodeName, list);
-	}
-	
-	public void printQueryIndex() {
-		System.out.println(candidate);
-		System.out.println(wait);
+		if (!list.contains(pn)) {
+			list.add(pn);
+			candidate.put(nodeName, list);
+		}
 	}
 	
 }
