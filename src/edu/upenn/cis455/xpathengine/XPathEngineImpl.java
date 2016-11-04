@@ -1,22 +1,34 @@
 package edu.upenn.cis455.xpathengine;
 
 import java.io.InputStream;
+import java.util.Arrays;
+import java.util.HashMap;
 
 import org.w3c.dom.Document;
 import org.xml.sax.helpers.DefaultHandler;
 
 public class XPathEngineImpl implements XPathEngine {
 	QueryIndex qi;
+	XPathParse rdp;
+	HashMap<String, XPath> paths;
+	boolean[] isValid;
 
 	public XPathEngineImpl() {
 		// Do NOT add arguments to the constructor!!
-		this.qi = new QueryIndex();
+		this.paths = new HashMap<String, XPath>();
 	}
 
 	public void setXPaths(String[] s) {
+		this.paths.clear();
+		this.qi = new QueryIndex();
+		this.rdp = new XPathParse(qi);
+		isValid = new boolean[s.length];
+		Arrays.fill(isValid, false);
+		
 		for (int i=0; i<s.length; i++) {
 			XPath path = new XPath("Q"+i);
-			XPathParse rdp = new XPathParse(qi, s[i], path);
+			paths.put("Q"+i, path);
+			rdp.setPath(s[i], path);
 			try {
 				rdp.recursiveParse(null, null);
 			} catch (Exception e) {
@@ -45,7 +57,7 @@ public class XPathEngineImpl implements XPathEngine {
 
 	@Override
 	public boolean[] evaluateSAX(InputStream document, DefaultHandler handler) {
-
+		// TODO: query index needs to be cloned before passing into handler, so that we don't need generate a new QueryIndex for every XML
 		return null;
 	}
 
