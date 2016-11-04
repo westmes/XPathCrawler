@@ -14,8 +14,9 @@ public class Handler extends DefaultHandler {
 	int level;
 	boolean[] isMatched;
 	HashSet<String> completed;
-	Stack<String> text;
-	Stack<PathNode> nodeText;
+	Stack<ArrayList<PathNode>> nodeText;
+	ArrayList<PathNode> nodeList;
+	private QueryIndex qiCopy;
 	
 	public Handler() {
 		super();
@@ -23,10 +24,10 @@ public class Handler extends DefaultHandler {
 	
 	public void setHandler(QueryIndex qi, boolean[] isMatched) {
 		this.qi = qi;
+		this.qiCopy = qi;
 		this.isMatched = isMatched;
 		this.completed = new HashSet<String>();
-		this.text = new Stack<String>();
-		this.nodeText = new Stack<PathNode>();
+		this.nodeText = new Stack<ArrayList<PathNode>>();
 	}
 	
 	@Override
@@ -37,30 +38,51 @@ public class Handler extends DefaultHandler {
 	
 	@Override
 	public void endDocument() throws SAXException {
-		// TODO: reevaluate undetermined nodes/filters
 		// only check the paths not completed
+		this.qi = qiCopy;
+//		Arrays.fill(isMatched, false);
+		completed.clear();
+		
 	}
-	
 	
 	@Override
 	public void endElement(String uri, String localName, String qName) throws SAXException {
-		System.out.println("end: " + localName);
+		if (qi.candidate.containsKey(localName)) {
+			
+			if (nodeList != null) {
+				removeFromCandidate(localName, nodeList);
+			}
+		}
+		nodeText.pop();
+		level--;
+		nodeList = null;
+//		System.out.println("end: " + localName);
 	}
 	
+//	private void textCheck(PathNode node) {
+//		for (ExpressionTree et : node.filters) {
+//			if (et.type.equals("text") || et.type.equals("contains")) {
+//				
+//			}
+//		}
+//		
+//	}
+	
+	private void removeFromCandidate(String localName, ArrayList<PathNode> nodeList) {
+		ArrayList<PathNode> list = qi.candidate.get(localName);
+		list.removeAll(nodeList);
+	}
 
 	
 	@Override
 	public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
-		if (qi == null) {
-			// throw: need to set handler
-			return;
-		}
-		
+//		System.out.println("start: " + qName);
 		level++;
 		if (qi.candidate.containsKey(localName)) {
 			// if the element is in candidate 
-			ArrayList<PathNode> nodeList = qi.candidate.get(localName);
-			for (PathNode node : nodeList) {	
+			nodeList = qi.candidate.get(localName);
+			nodeText.push(nodeList);
+			for (PathNode node : nodeList) {
 				if (!completed.contains(node.queryId)) {
 					boolean isLevel = levelCheck(node);
 					// didn't pass level check
@@ -72,38 +94,59 @@ public class Handler extends DefaultHandler {
 
 					// 2. filter check (just the attributes aka. @att=value)
 					filterCheck(node, attributes);
-					if (node.checkExpressionTree()) {
-						// all filter passed (all @att)
-						// complete this node
-						node.updateComplete();
-						if (node.nextPathNodeSet.size() == 0) {
-							// no next element, ending
-							// need to trace back to root
-							if (node.checkValid()) {
-								isMatched[Integer.parseInt(node.queryId.substring(1))] = true;
-								completed.add(node.queryId);
-							}
-						} else {
-							// TODO: move to the next element(s) of node
-							copyToCandidateList(node);
-						}
-					}
+					updateQueryIndex(node);
+//					if (node.checkExpressionTree()) {
+//						// all filter passed (all @att)
+//						// complete this node
+//						node.updateComplete();
+//						if (node.nextPathNodeSet.size() == 0) {
+//							// no next element, ending
+//							// need to trace back to root
+//							if (node.checkValid()) {
+//								isMatched[Integer.parseInt(node.queryId.substring(1))] = true;
+//								completed.add(node.queryId);
+//							}
+//						} else {
+//							copyToCandidateList(node);
+//						}
+//					}
 					
 				} else {
 					continue;
 				}
 			}
 		} else {
+			nodeText.push(new ArrayList<PathNode>());
 			return;
 		}
-		System.out.println("start: " + localName);
+		
 	}
 	
 	private void copyToCandidateList(PathNode node) {
-		// TODO Auto-generated method stub
+		for (PathNode pn : node.nextPathNodeSet) {
+			qi.addToCandidate(pn.nodeName, pn);
+		}
 		
 	}
 
+	private void updateQueryIndex(PathNode node) {
+		if (node.checkExpressionTree()) {
+			// all filter passed (all @att)
+			// complete this node
+			node.updateComplete();
+			if (node.nextPathNodeSet.size() == 0) {
+				// no next element, ending
+				// need to trace back to root
+				if (node.checkValid()) {
+					isMatched[Integer.parseInt(node.queryId.substring(1))] = true;
+					completed.add(node.queryId);
+				}
+			} else {
+				copyToCandidateList(node);
+			}
+		}
+	}
+	
 	private boolean levelCheck(PathNode node) {
 		// 1. level check
 		boolean levelCheck = false;
@@ -139,8 +182,35 @@ public class Handler extends DefaultHandler {
 	@Override
 	public void characters(char[] ch, int start, int length) throws SAXException {
 		String str = new String(ch, start, length);
-		
-		System.out.println(str);
+		ArrayList<PathNode> nodes = nodeText.peek();
+		for (PathNode node : nodes) {
+			if (!completed.contains(node)) {
+				for (ExpressionTree et : node.filters) {
+					if (et.type.equals("text") || et.type.equals("contains")) {
+						String val = et.value;
+						val = val.substring(1, val.length()-1); // get rid of double quote around it
+						if (et.type.equals("text")) {
+							if (val.equals(str)) {
+								et.isValid = true;
+							} else {
+								completed.add(node.queryId);
+							}
+						} else {
+							if (str.contains(val)) {
+								et.isValid = true;
+							} else {
+								completed.add(node.queryId);
+							}
+						}
+					}
+				}
+				
+				updateQueryIndex(node);
+			}
+		}
+
+
+//		System.out.println(str);
 	}
 	
 }

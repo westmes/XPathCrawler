@@ -1,10 +1,16 @@
 package edu.upenn.cis455.xpathengine;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.HashMap;
 
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
+
 import org.w3c.dom.Document;
+import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
 public class XPathEngineImpl implements XPathEngine {
@@ -12,6 +18,8 @@ public class XPathEngineImpl implements XPathEngine {
 	XPathParse rdp;
 	HashMap<String, XPath> paths;
 	boolean[] isValid;
+	boolean[] isMatched;
+	String[] xpaths;
 
 	public XPathEngineImpl() {
 		// Do NOT add arguments to the constructor!!
@@ -19,6 +27,7 @@ public class XPathEngineImpl implements XPathEngine {
 	}
 
 	public void setXPaths(String[] s) {
+		this.xpaths = s;
 		this.paths.clear();
 		this.qi = new QueryIndex();
 		this.rdp = new XPathParse(qi);
@@ -35,8 +44,9 @@ public class XPathEngineImpl implements XPathEngine {
 				System.out.println("Malformatted XPath");
 				e.printStackTrace();
 			}
-//			path.printXPath();
+			path.printXPath();
 		}
+		System.out.println();
 	}
 
 	public boolean isValid(int i) {
@@ -58,7 +68,28 @@ public class XPathEngineImpl implements XPathEngine {
 	@Override
 	public boolean[] evaluateSAX(InputStream document, DefaultHandler handler) {
 		// TODO: query index needs to be cloned before passing into handler, so that we don't need generate a new QueryIndex for every XML
-		return null;
+		isMatched = new boolean[xpaths.length];
+		Arrays.fill(isMatched, false);
+		SAXParserFactory spf = SAXParserFactory.newInstance();
+	    spf.setNamespaceAware(true);
+	    try {
+			SAXParser saxParser = spf.newSAXParser();
+			Handler h = (Handler) handler;
+			
+	    	h.setHandler(qi, isMatched);
+			saxParser.parse(document, h);
+			
+		} catch (ParserConfigurationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (SAXException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return isMatched;
 	}
 
 }

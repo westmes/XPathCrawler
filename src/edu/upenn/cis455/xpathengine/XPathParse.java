@@ -10,18 +10,18 @@ public class XPathParse {
 	XPath path;
 
 	public static void main(String[] args) {
-		String xpath = "/foo[bar[sql[text() =  \"   people\"]]][@att=\"xyz\"]/bar/abc[text/path[contains(text(),\"chicken\")]]/def";
-		XPath path = new XPath("Q1");
-		QueryIndex qi = new QueryIndex();
-		XPathParse rdp = new XPathParse(qi);
-		rdp.setPath(xpath, path);
-		try {
-			rdp.recursiveParse(null, null);
-		} catch (Exception e) {
-			System.out.println("Malformatted XPath");
-			e.printStackTrace();
-		}
-		path.printXPath();
+//		String xpath = "/foo[bar[sql[text() =  \"   people\"]]][@att=\"xyz\"]/bar/abc[text/path[contains(text(),\"chicken\")]]/def";
+//		XPath path = new XPath("Q1");
+//		QueryIndex qi = new QueryIndex();
+//		XPathParse rdp = new XPathParse(qi);
+//		rdp.setPath(xpath, path);
+//		try {
+//			rdp.recursiveParse(null, null);
+//		} catch (Exception e) {
+//			System.out.println("Malformatted XPath");
+//			e.printStackTrace();
+//		}
+//		path.printXPath();
 		
 	}
 	
